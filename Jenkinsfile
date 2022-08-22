@@ -19,7 +19,7 @@ pipeline {
             steps { 
 
                 git([url: 'https://github.com/parsaiabhi/discoveryservice.git', branch: 'master', credentialsId: 'GitHubTOKEN']) 
-				git '' 
+ 
 
             }
 
