@@ -1,37 +1,70 @@
 pipeline { 
-	agent any 
-		tools { 
-			maven 'maven3.8.6' 
-			} 
-		environment { 
-			DATE = new Date().format('yy.M')
-			TAG = "${DATE}.${BUILD_NUMBER}" 
-			} 
-			stages { 
-				stage ('Build') { 
-					steps { 
-						sh 'mvn clean package' 
-						} 
-					} 
-				stage('Docker Build') { 
-					steps { 
-						script { 
-							docker.build("dockerabhi85/dockerhub-repo/DS:${TAG}") 
-							} 
-						} 
-					} 
-				stage('Pushing Docker Image to Dockerhub') { 
-					steps { 
-						script { 
-							docker.withRegistry('https://registry.hub.docker.com', 'docker_credential') { docker.image("dockerabhi85/dockerhub-repo/DS:${TAG}").push() docker.image("dockerabhi85/dockerhub-repo/DS:${TAG}").push("latest") 
-							} 
-						} 
-					} 
-				} 
-				stage('Deploy'){ 
-					steps { 
-						sh "docker stop DS | true" sh "docker rm DS | true" sh "docker run --name DS -d -p 9004:8080 dockerabhi85/dockerhub-repo/DS:${TAG}" 
-						} 
-					} 
-				} 
-			}
+
+    environment { 
+
+        registry = "dockerabhi85/dockerhub-repo" 
+
+        registryCredential = 'dockerhub' 
+
+        dockerImage = '' 
+        
+    }
+
+    agent any 
+
+    stages { 
+
+        stage('Cloning our Git') { 
+
+            steps { 
+
+                git 'https://github.com/parsaiabhi/discoveryservice.git' 
+
+            }
+
+        } 
+
+        stage('Building our image') { 
+
+            steps { 
+
+                script { 
+                                        
+                    dockerImage = docker.build registry + ":$BUILD_NUMBER"                     
+                }    
+
+            } 
+
+        }
+
+        stage('Deploy our image') { 
+
+            steps { 
+
+                script { 
+
+                    docker.withRegistry( '', registryCredential ) { 
+
+                        dockerImage.push() 
+
+                    }
+
+                } 
+
+            }
+
+        } 
+
+        stage('Cleaning up') { 
+
+            steps { 
+
+                sh "docker rmi $registry:$BUILD_NUMBER" 
+
+            }
+
+        } 
+
+    }
+
+}
