@@ -2,7 +2,7 @@ pipeline {
 
     environment { 
 
-        registry = "dockerabhi85/dockerhub-repo" 
+        imagename = "dockerabhi85/dockerhub-repo" 
 
         registryCredential = 'dockerhub' 
 
@@ -18,7 +18,8 @@ pipeline {
 
             steps { 
 
-                git 'https://github.com/parsaiabhi/discoveryservice.git' 
+                git([url: 'https://github.com/parsaiabhi/discoveryservice.git', branch: 'master', credentialsId: 'GitHubTOKEN']) 
+				git '' 
 
             }
 
@@ -30,7 +31,7 @@ pipeline {
 
                 script { 
                                         
-                    dockerImage = -f docker.build registry + ":$BUILD_NUMBER"                     
+                    dockerImage = docker.build imagename                     
                 }    
 
             } 
@@ -43,11 +44,10 @@ pipeline {
 
                 script { 
 
-                    docker.withRegistry( '', registryCredential ) { 
-
-                        dockerImage.push() 
-
-                    }
+                    docker.withRegistry( '', registryCredential ) {
+						dockerImage.push("$BUILD_NUMBER")
+							dockerImage.push('latest')
+					}
 
                 } 
 
@@ -59,7 +59,7 @@ pipeline {
 
             steps { 
 
-                sh "docker rmi $registry:$BUILD_NUMBER" 
+                sh "docker rmi $imagename:$BUILD_NUMBER" 
 
             }
 
